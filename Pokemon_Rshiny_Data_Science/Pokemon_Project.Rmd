@@ -1,0 +1,162 @@
+---
+title: "Pokemon_project"
+author: "Idan Siman-Tov"
+date: "11/17/2021"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library, message=FALSE, warning=FALSE, echo=FALSE, eval=T}
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+library(crayon)
+library(shiny)
+
+```
+
+```{r getdata, message=FALSE, warning=FALSE, echo=FALSE, eval=T}
+
+# import csv
+
+Pokemon<-read.csv("pokemon.csv")
+
+```
+
+```{r inputs, echo=F, eval=F}
+
+# Pokemon type #1
+Pokemon_Type <- list(Pokemon$Type.1)
+selectInput(inputId = "Type_1", label="Type 1:", choices = c(Pokemon_Type = Pokemon_Type))
+
+# Pokemon type #2
+Pokemon_Type2 <- list(Pokemon$Type.2)
+selectInput(inputId = "Type_2", label="Type 2:", choices = c(Pokemon_Type2 = Pokemon_Type2))
+
+# Pokemon Number
+# Pokemon_Numb <- list(Pokemon$X.)
+# selectInput(inputId = "Pokemon_Number", label="Pokemon Number:", choices = c(Pokemon_Numb = Pokemon_Numb))
+
+# Pokemon Name
+Pokemon_name <- list(Pokemon$Name)
+selectInput(inputId = "Pokemon_Name", label="Pokemon Name:", choices = c(Pokemon_name = Pokemon_name))
+
+# Total Stats slider
+sliderInput(inputId = "Total_Stats", label= "Total Stats", min = 0, max = 780, value = c(0,780))
+
+# HP slider
+sliderInput(inputId = "HP", label= "Total Health", min = 1, max = 255, value = c(1,255))
+
+# Attack slider
+sliderInput(inputId = "Attack", label= "Attack", min = 5, max = 190, value = c(5,190))
+
+# Defense slider
+sliderInput(inputId = "Defense", label= "Defense", min = 5, max = 230, value = c(5,230))
+
+# Special Attack slider
+sliderInput(inputId = "Special_Attack", label= "Special Attack", min = 10, max = 194, value = c(10, 194))
+
+# Special Defense slider
+sliderInput(inputId = "Special_Defense", label= "Special Defense", min = 20, max = 230, value = c(20,230))
+
+# Speed slider
+sliderInput(inputId = "Speed", label= "Speed", min = 5, max = 180, value = c(5,180))
+```
+
+```{r Fig1, echo=FALSE, eval=TRUE}
+
+  # Turns the type 1 column into a usable string list 
+Pokemon_Type1 <- list(Pokemon$Type.1)
+
+inputPanel(
+    
+  # X axis, first selection 
+    selectInput(inputId = "x1", label = "X-axis:", choices = c("Sum of all Stats" = "Total", "HP"= "HP", "Attack" = "Attack", "Defense"= "Defense", "Special Attack" = "Sp..Atk", "Special Defense" = "Sp..Def", "Speed"= "Speed")),
+    
+       # y axis, second selection 
+        selectInput(inputId = "y1", label = "Y-axis:", choices = c("Sum of all Stats" = "Total", "HP"= "HP", "Attack" = "Attack", "Defense"= "Defense", "Special Attack" = "Sp..Atk", "Special Defense" = "Sp..Def", "Speed"= "Speed"), selected = "HP"),
+    
+          # z axis, third selection
+            selectInput(inputId = "z1", label = "Color:", choices = c("Sum of all Stats" = "Total", "HP"= "HP", "Attack" = "Attack", "Defense"= "Defense", "Special Attack" = "Sp..Atk", "Special Defense" = "Sp..Def", "Speed"= "Speed", "Primary Type"="Type.1", "Secondary Type" = "Type.2"), selected = "Speed"),
+    
+    # select first type
+    selectInput(inputId = "Type_1", label="Primary Type:", choices = c("Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying", "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water"), selected = "Normal"),
+
+      # updates the second type to ensure its possible 
+    renderUI({
+        pokemon_subset <- filter(Pokemon, Type.1 %in% input$Type_1)
+        selectInput(inputId = "Type_2", label = "Select second Type:", choices = c(unique(pokemon_subset()$Type.2)))
+            })
+    )
+
+# ensures availability of value before proceeding
+pokemon_subset <- reactive({
+    filter(Pokemon, Type.1 %in% input$Type_1)
+  })
+
+
+# ensures availability of value before proceeding
+pokemon_subset2 <- reactive({
+    req(input$Type_2) # ensure availability of value before proceeding
+    filter(pokemon_subset(), Type.2 %in% input$Type_2)
+  })
+
+
+
+renderPlot({
+    # adds axis data
+  ggplot(data = pokemon_subset2(), aes_string(x = input$x1, y = input$y1, color = input$z1)) +
+    # adds points
+  geom_point()+
+    # adds names to points that dont overlap
+  geom_text_repel(aes(label=Name))+
+    # adds a curved line of best fit
+  geom_smooth(geom="line", color="gold3", size=0.3, se=F)+
+    # adds a stright line of best fit
+  geom_smooth(method=lm, color="gold", size=0.3, se=F)
+  
+  
+})
+```
+
+
+
+```{r Fig2, echo=FALSE, eval=TRUE}
+
+  # Turns the type 1 column into a usable string list 
+Pokemon_Type1 <- list(Pokemon$Type.1)
+
+inputPanel(
+
+      # Select if you want Primary or Secondary Pokemon Type
+    selectInput(inputId = "x2", label = "X-axis:", choices = c("Primary Type"="Type.1", "Secondary Type" = "Type.2")),
+  
+  
+      #Select all Pokemon types you want to display 
+    checkboxGroupInput (inputId = "Type_3", label = "Primary Types Displayed", choices = c("Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying", "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water"), selected = c("Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying", "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water"), inline = T),
+
+
+      # y axis, second selection 
+    selectInput(inputId = "y2", label = "Y-axis:", choices = c("Sum of all Stats" = "Total", "HP"= "HP", "Attack" = "Attack", "Defense"= "Defense", "Special Attack" = "Sp..Atk", "Special Defense" = "Sp..Def", "Speed"= "Speed"), selected = "HP"),
+    
+      # z axis, third selection
+    selectInput(inputId = "z2", label = "Color:", choices = c("Sum of all Stats" = "Total", "HP"= "HP", "Attack" = "Attack", "Defense"= "Defense", "Special Attack" = "Sp..Atk", "Special Defense" = "Sp..Def", "Speed"= "Speed", "Type 1"="Type.1", "Type 2" = "Type.2"), selected = "Speed")
+  
+  )
+
+      # filters the checkbox choices so that non-selected types dont pass through
+    pokemon_subset3 <- reactive({
+        filter(Pokemon, Type.1 %in% input$Type_3)
+      })
+
+renderPlot({
+ggplot(data = pokemon_subset3(), aes_string(x = input$x2, y = input$y2, color = input$z2)) +
+  stat_boxplot(geom = "errorbar", width= 0.5, size=0.3)+
+  geom_boxplot(outlier.size = -1, size=0.3 )+
+  geom_point(position = position_jitter(width=0.25, seed = 42), size=0.3, width=0.5)
+  })
+```
